@@ -34,7 +34,7 @@ if st.button("Generate MCQs", disabled=disable_inputs):
             full_prompt = f"""
                         You are an expert IITJEE MCQ creator. Generate {num_questions} MCQ questions for the topic '{topic}' from {subject} for class 11/12. The questions should be of '{difficulty}' level and strictly IITJEE standard. 
 
-                        Output a JSON list, each item with these keys: question, option1, option2, option3, option4, solution, hints, correct_answer. 
+                        Output a JSON list, each item with these keys: question, option1, option2, option3, option4, hints, correct_answer. 
 
                         Example:
                         [
@@ -74,7 +74,6 @@ if st.button("Generate MCQs", disabled=disable_inputs):
                 st.session_state["mcqs"] = mcqs
                 st.session_state["show_quiz"] = True
                 st.session_state["finished"] = False
-                st.session_state["show_solution"] = [False] * len(mcqs)
             except Exception as e:
                 st.error(f"Error parsing MCQ JSON: {e}")
                 st.code(content if 'content' in locals() else str(e))
@@ -93,15 +92,6 @@ if st.session_state.get("show_quiz"):
             disabled=st.session_state.get("finished", False)
         )
         answers.append(ans)
-        # Show Solution button, only enabled after finish
-        if st.session_state.get("finished", False):
-            if st.button(f"Show Solution for Q{idx+1}", key=f"show_sol_{idx}"):
-                st.session_state["show_solution"][idx] = True
-            if st.session_state["show_solution"][idx]:
-                correct = q["correct_answer"]
-                st.markdown(f"- Correct answer: {q[correct]}")
-                st.markdown(f"- Hints: {q['hints']}")
-                st.markdown(f"- Solution: {q.get('solution', q.get('brief solution', ''))}")
     if not st.session_state.get("finished", False):
         if st.button("Finish"):
             st.session_state["finished"] = True
