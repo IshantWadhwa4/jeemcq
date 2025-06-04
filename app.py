@@ -2,6 +2,7 @@ import streamlit as st
 from syllabus import MATHEMATICS, PHYSICS, CHEMISTRY
 import json
 from groq import Groq
+import re
 
 st.title("MCQ Generator (IITJEE Level)")
 
@@ -33,9 +34,9 @@ if st.button("Generate MCQs", disabled=disable_inputs):
             task = "IITJEE MCQ creator"
             full_prompt = f"""
                         You are an expert IITJEE MCQ creator. Generate {num_questions} MCQ questions for the topic '{topic}' from {subject} for class 11/12. The questions should be of '{difficulty}' level and strictly IITJEE standard. 
-
+                        syllabus: {topic_dict[subject][topic]}
                         Output a JSON list, each item with these keys: question, option1, option2, option3, option4, hints, correct_answer. 
-
+                        Strictly follow the format below:
                         Example:
                         [
                         {{
@@ -44,7 +45,6 @@ if st.button("Generate MCQs", disabled=disable_inputs):
                             "option2": "...",
                             "option3": "...",
                             "option4": "...",
-                            "solution": "...",
                             "hints": "...",
                             "correct_answer": "option2"
                         }}, ...
@@ -70,10 +70,17 @@ if st.button("Generate MCQs", disabled=disable_inputs):
                 # Sometimes the model returns code block, strip it
                 if content.strip().startswith("```"):
                     content = content.strip().split("\n",1)[1].rsplit("\n",1)[0]
-                mcqs = json.loads(content)
-                st.session_state["mcqs"] = mcqs
-                st.session_state["show_quiz"] = True
-                st.session_state["finished"] = False
+                # Extract the JSON array from the response
+                match = re.search(r'\[\s*\{.*?\}\s*\]', content, re.DOTALL)
+                if match:
+                    json_str = match.group(0)
+                    mcqs = json.loads(json_str)
+                    st.session_state["mcqs"] = mcqs
+                    st.session_state["show_quiz"] = True
+                    st.session_state["finished"] = False
+                else:
+                    st.error("Could not find a JSON array in the model's response.")
+                    st.code(content)
             except Exception as e:
                 st.error(f"Error parsing MCQ JSON: {e}")
                 st.code(content if 'content' in locals() else str(e))
